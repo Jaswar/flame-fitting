@@ -12,6 +12,7 @@ For comments or questions, please email us at flame@tue.mpg.de
 
 import numpy as np
 import chumpy as ch
+import pyvista as pv
 from os.path import join
 
 from psbody.mesh import Mesh
@@ -19,7 +20,7 @@ from smpl_webuser.serialization import load_model
 from sbody.mesh_distance import ScanToMesh
 from sbody.robustifiers import GMOf
 from sbody.alignment.objectives import sample_from_mesh
-from fitting.landmarks import load_embedding, landmark_error_3d, mesh_points_by_barycentric_coordinates
+from fitting.landmarks import load_embedding, landmark_error_3d, mesh_points_by_barycentric_coordinates, load_picked_points
 from fitting.util import load_binary_pickle, write_simple_obj, safe_mkdir, get_unit_factor
 
 # -----------------------------------------------------------------------------
@@ -95,7 +96,32 @@ def fit_scan(  scan,                        # input scan
         parms: fitted model parameters
 
     """
+    # with middle points
+    # relevant_landmarks = [5, 6, 7, 8, 9,
+    #                       10, 11, 12, 13, 
+    #                       16, 17, 18,
+    #                       25, 26, 27, 28, 29, 30,
+    #                       34, 35, 36, 37, 38, 39, 40,
+    #                       45, 46, 47, 48, 49]
 
+    # without middle points
+    relevant_landmarks = [5, 6, 7, 8, 9,
+                          17, 18,
+                          25, 26, 27, 28, 29, 30,
+                          35, 36, 37, 38, 39,
+                          46, 47, 48]
+    
+    pv_vertices = scan.v
+    pv_faces = np.hstack([np.full((scan.f.shape[0], 1), 3), scan.f])
+    pv_scan = pv.PolyData(pv_vertices, pv_faces)
+    to_remove = pv_vertices[:, 0] > np.mean(pv_vertices[:, 0])
+    pv_scan, _ = pv_scan.remove_points(to_remove)
+    scan.v, scan.f = pv_scan.points, pv_scan.faces.reshape(-1, 4)[:, 1:]
+
+    lmk_3d = lmk_3d[relevant_landmarks]
+    lmk_face_idx = lmk_face_idx[relevant_landmarks]
+    lmk_b_coords = lmk_b_coords[relevant_landmarks]
+    
     # variables
     shape_idx      = np.arange( 0, min(300,shape_num) )        # valid shape component range in "betas": 0-299
     expr_idx       = np.arange( 300, 300+min(100,expr_num) )   # valid expression component range in "betas": 300-399
@@ -171,19 +197,19 @@ def fit_scan(  scan,                        # input scan
 
 def run_fitting():
     # input scan
-    scan_path = './data/scan.obj'
+    scan_path = './data/deformed_surface_001.obj'
 
     # landmarks of the scan
-    scan_lmk_path = './data/scan_lmks.npy'
+    scan_lmk_path = './data/deformed_surface_001_picked_points_2.pp'
 
     # measurement unit of landmarks ['m', 'cm', 'mm', 'NA'] 
     # When using option 'NA', the scale of the scan will be estimated by rigidly aligning model and scan landmarks
-    scan_unit = 'm' 
+    scan_unit = 'mm' 
 
     scan = Mesh(filename=scan_path)
     print("loaded scan from:", scan_path)
 
-    lmk_3d = np.load(scan_lmk_path)
+    lmk_3d = load_picked_points(scan_lmk_path)
     print("loaded scan landmark from:", scan_lmk_path)
 
     # model

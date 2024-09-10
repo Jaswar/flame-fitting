@@ -15,7 +15,7 @@ import chumpy as ch
 from os.path import join
 
 from smpl_webuser.serialization import load_model
-from fitting.landmarks import load_embedding, landmark_error_3d
+from fitting.landmarks import load_embedding, landmark_error_3d, load_picked_points
 from fitting.util import load_binary_pickle, write_simple_obj, safe_mkdir, get_unit_factor
 
 # -----------------------------------------------------------------------------
@@ -42,7 +42,24 @@ def fit_lmk3d( lmk_3d,                      # input landmark 3d
         parms: fitted model parameters
 
     """
+    # with middle points
+    # relevant_landmarks = [5, 6, 7, 8, 9,
+    #                       10, 11, 12, 13, 
+    #                       16, 17, 18,
+    #                       25, 26, 27, 28, 29, 30,
+    #                       34, 35, 36, 37, 38, 39, 40,
+    #                       45, 46, 47, 48, 49]
 
+    # without middle points
+    relevant_landmarks = [5, 6, 7, 8, 9,
+                          17, 18,
+                          25, 26, 27, 28, 29, 30,
+                          35, 36, 37, 38, 39,
+                          46, 47, 48]
+    
+    lmk_3d = lmk_3d[relevant_landmarks]
+    lmk_face_idx = lmk_face_idx[relevant_landmarks]
+    lmk_b_coords = lmk_b_coords[relevant_landmarks]
     # variables
     pose_idx       = np.union1d(np.arange(3), np.arange(6,9)) # global rotation and jaw rotation
     shape_idx      = np.arange( 0, min(300,shape_num) )        # valid shape component range in "betas": 0-299
@@ -120,12 +137,12 @@ def fit_lmk3d( lmk_3d,                      # input landmark 3d
 
 def run_fitting():
     # input landmarks
-    lmk_path = './data/scan_lmks.npy'
+    lmk_path = './data/deformed_surface_001_picked_points_2.pp'
     # measurement unit of landmarks ['m', 'cm', 'mm']
-    unit = 'm' 
+    unit = 'mm' 
 
     scale_factor = get_unit_factor('m') / get_unit_factor(unit)
-    lmk_3d = scale_factor*np.load(lmk_path)
+    lmk_3d = scale_factor*load_picked_points(lmk_path)
     print("loaded 3d landmark from:", lmk_path)
 
     # model
