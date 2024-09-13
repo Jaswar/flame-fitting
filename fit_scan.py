@@ -97,19 +97,19 @@ def fit_scan(  scan,                        # input scan
 
     """
     # with middle points
-    # relevant_landmarks = [5, 6, 7, 8, 9,
-    #                       10, 11, 12, 13, 
-    #                       16, 17, 18,
-    #                       25, 26, 27, 28, 29, 30,
-    #                       34, 35, 36, 37, 38, 39, 40,
-    #                       45, 46, 47, 48, 49]
+    relevant_landmarks = [5, 6, 7, 8, 9,
+                          10, 11, 12, 13, 
+                          16, 17, 18,
+                          25, 26, 27, 28, 29, 30,
+                          34, 35, 36, 37, 38, 39, 40,
+                          45, 46, 47, 48, 49]
 
     # without middle points
-    relevant_landmarks = [5, 6, 7, 8, 9,
-                          17, 18,
-                          25, 26, 27, 28, 29, 30,
-                          35, 36, 37, 38, 39,
-                          46, 47, 48]
+    # relevant_landmarks = [5, 6, 7, 8, 9,
+    #                       17, 18,
+    #                       25, 26, 27, 28, 29, 30,
+    #                       35, 36, 37, 38, 39,
+    #                       46, 47, 48]
     
     pv_vertices = scan.v
     pv_faces = np.hstack([np.full((scan.f.shape[0], 1), 3), scan.f])
@@ -121,7 +121,7 @@ def fit_scan(  scan,                        # input scan
     lmk_3d = lmk_3d[relevant_landmarks]
     lmk_face_idx = lmk_face_idx[relevant_landmarks]
     lmk_b_coords = lmk_b_coords[relevant_landmarks]
-    
+
     # variables
     shape_idx      = np.arange( 0, min(300,shape_num) )        # valid shape component range in "betas": 0-299
     expr_idx       = np.arange( 300, 300+min(100,expr_num) )   # valid expression component range in "betas": 300-399
@@ -197,10 +197,10 @@ def fit_scan(  scan,                        # input scan
 
 def run_fitting():
     # input scan
-    scan_path = './data/deformed_surface_001.obj'
+    scan_path = './data/deformed_surface_003.obj'
 
     # landmarks of the scan
-    scan_lmk_path = './data/deformed_surface_001_picked_points_2.pp'
+    scan_lmk_path = './data/deformed_surface_003_picked_points.pp'
 
     # measurement unit of landmarks ['m', 'cm', 'mm', 'NA'] 
     # When using option 'NA', the scale of the scan will be estimated by rigidly aligning model and scan landmarks
@@ -220,6 +220,7 @@ def run_fitting():
     # landmark embedding
     lmk_emb_path = './models/flame_static_embedding.pkl' 
     lmk_face_idx, lmk_b_coords = load_embedding(lmk_emb_path)
+    assert lmk_3d.shape[0] == lmk_face_idx.shape[0] == lmk_b_coords.shape[0]
     print("loaded lmk embedding")
 
     # scale scans and scan landmarks to be in the same local coordinate systems as the FLAME model
@@ -243,7 +244,7 @@ def run_fitting():
     # scan vertex to model surface distance term
     weights['s2m']   = 2.0   
     # landmark term
-    weights['lmk']   = 1e-2
+    weights['lmk']   = 0.1
     # shape regularizer (weight higher to regularize face shape more towards the mean)
     weights['shape'] = 1e-4
     # expression regularizer (weight higher to regularize facial expression more towards the mean)

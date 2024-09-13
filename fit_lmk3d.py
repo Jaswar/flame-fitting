@@ -43,19 +43,19 @@ def fit_lmk3d( lmk_3d,                      # input landmark 3d
 
     """
     # with middle points
-    # relevant_landmarks = [5, 6, 7, 8, 9,
-    #                       10, 11, 12, 13, 
-    #                       16, 17, 18,
-    #                       25, 26, 27, 28, 29, 30,
-    #                       34, 35, 36, 37, 38, 39, 40,
-    #                       45, 46, 47, 48, 49]
+    relevant_landmarks = [5, 6, 7, 8, 9,
+                          10, 11, 12, 13, 
+                          16, 17, 18,
+                          25, 26, 27, 28, 29, 30,
+                          34, 35, 36, 37, 38, 39, 40,
+                          45, 46, 47, 48, 49]
 
     # without middle points
-    relevant_landmarks = [5, 6, 7, 8, 9,
-                          17, 18,
-                          25, 26, 27, 28, 29, 30,
-                          35, 36, 37, 38, 39,
-                          46, 47, 48]
+    # relevant_landmarks = [5, 6, 7, 8, 9,
+    #                       17, 18,
+    #                       25, 26, 27, 28, 29, 30,
+    #                       35, 36, 37, 38, 39,
+    #                       46, 47, 48]
     
     lmk_3d = lmk_3d[relevant_landmarks]
     lmk_face_idx = lmk_face_idx[relevant_landmarks]
@@ -137,7 +137,7 @@ def fit_lmk3d( lmk_3d,                      # input landmark 3d
 
 def run_fitting():
     # input landmarks
-    lmk_path = './data/deformed_surface_001_picked_points_2.pp'
+    lmk_path = './data/deformed_surface_003_picked_points.pp'
     # measurement unit of landmarks ['m', 'cm', 'mm']
     unit = 'mm' 
 
