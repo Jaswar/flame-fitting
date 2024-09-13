@@ -71,6 +71,22 @@ def compute_approx_scale(lmk_3d, model, lmk_face_idx, lmk_b_coords, opt_options=
 
 # -----------------------------------------------------------------------------
 
+def symmetrize_scan(scan):
+    pv_vertices = scan.v
+    pv_faces = np.hstack([np.full((scan.f.shape[0], 1), 3), scan.f])
+    pv_scan = pv.PolyData(pv_vertices, pv_faces)
+
+    midpoint = np.mean(pv_vertices[:, 0])
+    to_remove = pv_vertices[:, 0] > midpoint
+    pv_scan, _ = pv_scan.remove_points(to_remove)
+
+    pv_vertices, pv_faces = pv_scan.points, pv_scan.faces.reshape(-1, 4)[:, 1:]
+    new_pv_vertices = np.vstack([pv_vertices, pv_vertices])
+    new_pv_vertices[pv_vertices.shape[0]:, 0] = 2 * midpoint - new_pv_vertices[pv_vertices.shape[0]:, 0]
+    new_pv_faces = np.vstack([pv_faces, pv_faces + pv_vertices.shape[0]])
+    scan.v, scan.f = new_pv_vertices, new_pv_faces
+
+
 def fit_scan(  scan,                        # input scan
                lmk_3d,                      # input scan landmarks
                model,                       # model
@@ -111,12 +127,13 @@ def fit_scan(  scan,                        # input scan
     #                       35, 36, 37, 38, 39,
     #                       46, 47, 48]
     
-    pv_vertices = scan.v
-    pv_faces = np.hstack([np.full((scan.f.shape[0], 1), 3), scan.f])
-    pv_scan = pv.PolyData(pv_vertices, pv_faces)
-    to_remove = pv_vertices[:, 0] > np.mean(pv_vertices[:, 0])
-    pv_scan, _ = pv_scan.remove_points(to_remove)
-    scan.v, scan.f = pv_scan.points, pv_scan.faces.reshape(-1, 4)[:, 1:]
+    # pv_vertices = scan.v
+    # pv_faces = np.hstack([np.full((scan.f.shape[0], 1), 3), scan.f])
+    # pv_scan = pv.PolyData(pv_vertices, pv_faces)
+    # to_remove = pv_vertices[:, 0] > np.mean(pv_vertices[:, 0])
+    # pv_scan, _ = pv_scan.remove_points(to_remove)
+    # scan.v, scan.f = pv_scan.points, pv_scan.faces.reshape(-1, 4)[:, 1:]
+    symmetrize_scan(scan)
 
     # lmk_3d = lmk_3d[relevant_landmarks]
     # lmk_face_idx = lmk_face_idx[relevant_landmarks]
