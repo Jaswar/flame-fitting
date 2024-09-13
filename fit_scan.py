@@ -20,7 +20,7 @@ from smpl_webuser.serialization import load_model
 from sbody.mesh_distance import ScanToMesh
 from sbody.robustifiers import GMOf
 from sbody.alignment.objectives import sample_from_mesh
-from fitting.landmarks import load_embedding, landmark_error_3d, mesh_points_by_barycentric_coordinates, load_picked_points
+from fitting.landmarks import load_embedding, landmark_error_3d, mesh_points_by_barycentric_coordinates, load_picked_points, landmark_symmetric_error_3d
 from fitting.util import load_binary_pickle, write_simple_obj, safe_mkdir, get_unit_factor
 
 # -----------------------------------------------------------------------------
@@ -118,9 +118,9 @@ def fit_scan(  scan,                        # input scan
     pv_scan, _ = pv_scan.remove_points(to_remove)
     scan.v, scan.f = pv_scan.points, pv_scan.faces.reshape(-1, 4)[:, 1:]
 
-    lmk_3d = lmk_3d[relevant_landmarks]
-    lmk_face_idx = lmk_face_idx[relevant_landmarks]
-    lmk_b_coords = lmk_b_coords[relevant_landmarks]
+    # lmk_3d = lmk_3d[relevant_landmarks]
+    # lmk_face_idx = lmk_face_idx[relevant_landmarks]
+    # lmk_b_coords = lmk_b_coords[relevant_landmarks]
 
     # variables
     shape_idx      = np.arange( 0, min(300,shape_num) )        # valid shape component range in "betas": 0-299
@@ -137,18 +137,29 @@ def fit_scan(  scan,                        # input scan
 
     # objectives
     # landmark error
-    lmk_err = landmark_error_3d(mesh_verts=model, mesh_faces=model.f,  lmk_3d=lmk_3d, lmk_face_idx=lmk_face_idx, lmk_b_coords=lmk_b_coords)
+    lmk_err = landmark_error_3d(mesh_verts=model, 
+                                mesh_faces=model.f,  
+                                lmk_3d=lmk_3d[relevant_landmarks], 
+                                lmk_face_idx=lmk_face_idx[relevant_landmarks], 
+                                lmk_b_coords=lmk_b_coords[relevant_landmarks])
 
     # scan-to-mesh distance, measuring the distance between scan vertices and the closest points in the model's surface
     sampler = sample_from_mesh(scan, sample_type='vertices')
     s2m = ScanToMesh(scan, model, model.f, scan_sampler=sampler, rho=lambda x: GMOf(x, sigma=gmo_sigma))
+
+    symmetric_error = landmark_symmetric_error_3d(model, model.f, lmk_face_idx, lmk_b_coords)
 
     # regularizer
     shape_err = weights['shape'] * model.betas[shape_idx] 
     expr_err  = weights['expr']  * model.betas[expr_idx] 
     pose_err  = weights['pose']  * model.pose[3:] # exclude global rotation
 
-    objectives = {'s2m': weights['s2m']*s2m, 'lmk': weights['lmk']*lmk_err, 'shape': shape_err, 'expr': expr_err, 'pose': pose_err} 
+    objectives = {'s2m': weights['s2m']*s2m, 
+                  'lmk': weights['lmk']*lmk_err, 
+                  'symm': weights['symm']*symmetric_error,
+                  'shape': shape_err, 
+                  'expr': expr_err, 
+                  'pose': pose_err} 
 
     # options
     if opt_options is None:
@@ -197,10 +208,10 @@ def fit_scan(  scan,                        # input scan
 
 def run_fitting():
     # input scan
-    scan_path = './data/deformed_surface_003.obj'
+    scan_path = './data/deformed_surface_001.obj'
 
     # landmarks of the scan
-    scan_lmk_path = './data/deformed_surface_003_picked_points.pp'
+    scan_lmk_path = './data/deformed_surface_001_picked_points.pp'
 
     # measurement unit of landmarks ['m', 'cm', 'mm', 'NA'] 
     # When using option 'NA', the scale of the scan will be estimated by rigidly aligning model and scan landmarks
@@ -245,6 +256,8 @@ def run_fitting():
     weights['s2m']   = 2.0   
     # landmark term
     weights['lmk']   = 0.1
+    # error for the asymmetry of expressions
+    weights['symm']  = 0.1
     # shape regularizer (weight higher to regularize face shape more towards the mean)
     weights['shape'] = 1e-4
     # expression regularizer (weight higher to regularize facial expression more towards the mean)

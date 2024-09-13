@@ -76,6 +76,30 @@ def landmark_error_3d( mesh_verts, mesh_faces, lmk_3d, lmk_face_idx, lmk_b_coord
 
     return lmk3d_obj
 
+def landmark_symmetric_error_3d(mesh_verts, mesh_faces, lmk_face_idx, lmk_b_coords, weight=1.0):
+    v_selected = mesh_points_by_barycentric_coordinates( mesh_verts, mesh_faces, lmk_face_idx, lmk_b_coords )
+
+    # mapping = {1: 10, 2: 9, 3: 8, 4: 7, 5: 6,  
+    #            15: 19, 16: 18, 
+    #            20: 29, 21: 28, 22: 27, 23: 26, 24: 31, 25: 30,
+    #            32: 38, 33: 37, 34: 36, 
+    #            43: 39, 42: 40,
+    #            44: 48, 45: 47, 51: 49}
+    indices = np.array([1, 2, 3, 4, 5, 15, 16, 20, 21, 22, 23, 24, 25, 32, 33, 34, 43, 42, 44, 45, 51])
+    mapped = np.array([10, 9, 8, 7, 6, 19, 18, 29, 28, 27, 26, 31, 30, 38, 37, 36, 39, 40, 48, 47, 49])
+    indices, mapped = indices - 1, mapped - 1
+
+    midpoint = ch.mean(mesh_verts[:, 0])
+    flipped_v_selected_x = v_selected[:, 0]
+    flipped_v_selected_x = 2 * midpoint - flipped_v_selected_x
+    flipped_v_selected_y = v_selected[:, 1]
+    flipped_v_selected_z = v_selected[:, 2]
+    flipped_v_selected = ch.vstack([flipped_v_selected_x, flipped_v_selected_y, flipped_v_selected_z]).T    
+
+    error = weight * (flipped_v_selected[indices] - v_selected[mapped])
+    return error
+    
+
 # -----------------------------------------------------------------------------
 
 def load_picked_points(filename):
