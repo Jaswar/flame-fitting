@@ -22,6 +22,7 @@ from sbody.robustifiers import GMOf
 from sbody.alignment.objectives import sample_from_mesh
 from fitting.landmarks import load_embedding, landmark_error_3d, mesh_points_by_barycentric_coordinates, load_picked_points, landmark_symmetric_error_3d
 from fitting.util import load_binary_pickle, write_simple_obj, safe_mkdir, get_unit_factor
+from scipy.spatial import KDTree
 
 # -----------------------------------------------------------------------------
 
@@ -76,14 +77,24 @@ def symmetrize_scan(scan):
     pv_faces = np.hstack([np.full((scan.f.shape[0], 1), 3), scan.f])
     pv_scan = pv.PolyData(pv_vertices, pv_faces)
 
-    midpoint = np.mean(pv_vertices[:, 0])
-    to_remove = pv_vertices[:, 0] > midpoint
+    neutral_scan = pv.PolyData('./data/tetmesh_face_surface.obj')
+    neutral_scan.points /= 1000.
+
+    midpoint = np.mean(neutral_scan.points[:, 0])
+    to_remove = neutral_scan.points[:, 0] > midpoint
     pv_scan, _ = pv_scan.remove_points(to_remove)
 
     pv_vertices, pv_faces = pv_scan.points, pv_scan.faces.reshape(-1, 4)[:, 1:]
     new_pv_vertices = np.vstack([pv_vertices, pv_vertices])
     new_pv_vertices[pv_vertices.shape[0]:, 0] = 2 * midpoint - new_pv_vertices[pv_vertices.shape[0]:, 0]
     new_pv_faces = np.vstack([pv_faces, pv_faces + pv_vertices.shape[0]])
+
+    # new_pv_scan = pv.PolyData(new_pv_vertices, np.hstack([np.full((new_pv_faces.shape[0], 1), 3), new_pv_faces]))
+    # plot = pv.Plotter()
+    # plot.background_color = 'white'
+    # plot.add_mesh(new_pv_scan, color='lightblue')
+    # plot.show()
+
     scan.v, scan.f = new_pv_vertices, new_pv_faces
 
 
@@ -225,10 +236,10 @@ def fit_scan(  scan,                        # input scan
 
 def run_fitting():
     # input scan
-    scan_path = './data/deformed_surface_001.obj'
+    scan_path = './data/deformed_surface_019.obj'
 
     # landmarks of the scan
-    scan_lmk_path = './data/deformed_surface_001_picked_points.pp'
+    scan_lmk_path = './data/deformed_surface_019_picked_points.pp'
 
     # measurement unit of landmarks ['m', 'cm', 'mm', 'NA'] 
     # When using option 'NA', the scale of the scan will be estimated by rigidly aligning model and scan landmarks
