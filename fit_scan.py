@@ -236,10 +236,10 @@ def fit_scan(  scan,                        # input scan
 
 def run_fitting():
     # input scan
-    scan_path = './data/deformed_surface_019.obj'
+    scan_path = './data/deformed_surface_014.obj'
 
     # landmarks of the scan
-    scan_lmk_path = './data/deformed_surface_019_picked_points.pp'
+    scan_lmk_path = './data/deformed_surface_014_picked_points.pp'
 
     # measurement unit of landmarks ['m', 'cm', 'mm', 'NA'] 
     # When using option 'NA', the scale of the scan will be estimated by rigidly aligning model and scan landmarks
